@@ -4,8 +4,8 @@
   "description": "POS System Monorepo with Electron App and Admin Panel",
   "private": true,
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
+    "build": "node api.js && turbo build",
+    "dev": "node api.js && turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write .",
     "clean": "turbo clean",
