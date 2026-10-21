@@ -4,9 +4,13 @@ import { mutation } from './_generated/server';
 import { v } from 'convex/values';
 
 export const createAdmin = mutation({
-  args: { name: v.string(), email: v.string(), password: v.string() },
+  args: { name: v.string(), email: v.string(), password: v.string(), setupSecret: v.string() },
   handler: async (ctx, args) => {
-    const { name, email, password } = args;
+    const { name, email, password, setupSecret } = args;
+
+    if (!process.env.ADMIN_SETUP_SECRET || setupSecret !== process.env.ADMIN_SETUP_SECRET) {
+      throw new Error('Not authorized');
+    }
 
     const hashedPassword = await hashPassword(password);
 
