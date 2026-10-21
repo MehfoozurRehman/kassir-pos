@@ -1,55 +1,48 @@
-# Retail & Restaurant POS Monorepo
+# Kassir POS
 
-An enterprise point-of-sale (POS) monorepo system containing a native desktop checkout application (Electron) and a web management administration portal (Turborepo).
+A monorepo with an Electron cashier terminal for checkout and a Next.js admin panel for managing shops, payments and sales, orchestrated with Turborepo.
 
-## Overview
+## The problem
 
-The `pos-app` monorepo manages retail store checkouts and administrative backend operations across two distinct applications orchestrated with [Turborepo](https://turbo.build/):
-- **Desktop POS (`apps/pos-electron`)**: High-speed offline-first desktop cashier terminal with thermal receipt printing and barcode scanning.
-- **Admin Panel (`apps/admin-panel`)**: Web-based store inventory, employee shifts, sales reporting, and product catalog management portal.
+A store needs two things that work differently: a checkout desktop at the till, and a web panel for the back office. Keeping both in one repository, with shared tooling and one build pipeline, makes changes to each easier to coordinate.
 
-## Tech Stack
+## What it does
 
-- **Monorepo Engine**: [Turborepo](https://turbo.build/) (v2), pnpm workspaces
-- **Cashier Terminal**: Electron, React, TypeScript
-- **Administration Portal**: Next.js / React, TypeScript
-- **Tooling**: Prettier, TypeScript, ESLint
+- **Cashier terminal** (`apps/pos-electron`). An Electron app with a sign-in form, sidebar navigation, a barcode input component and image upload components. Its data lives in a local JSON database (lowdb) under the user's home directory, and the main process exposes it to the renderer through IPC handlers, for example `db:get` and the `log:*` handlers in `src/main/db.ts`.
+- **Shop management** (`/dashboard/shops`, `/dashboard/shops/[id]`). The admin panel lists shops, creates them through a sheet component, and shows a detail page for each shop.
+- **Payments** (`/dashboard/payments`). A list of payments, backed by Convex.
+- **Analytics** (`/dashboard/analytics`). A page for sales and payment reporting.
+- **Shop sign-in** (`app/api/app-auth`). A route that checks a shop ID and password before issuing access.
+- **File handling.** A Convex `files` table and `convex/files.ts` support uploads from the admin side.
 
-## Prerequisites
+## How it's built
 
-- Node.js (v18 or higher recommended)
-- Package manager (`pnpm` v10 recommended)
+- **Monorepo.** Turborepo 2 with pnpm workspaces. The root `package.json` pins `pnpm@10.24.0` and runs `turbo dev`, `turbo build`, `turbo lint` and `turbo type-check`.
+- **Cashier terminal.** Electron 37 with `electron-vite`, React and TypeScript. The UI uses shadcn-style components and Tabler icons. The data layer is lowdb.
+- **Admin panel.** Next.js App Router with Turbopack, React 19 and Convex. Its Convex schema covers users, shops, payments, products, inventory, orders, logs, notes and files.
 
-## Getting Started
+Two decisions stand out:
 
-1. **Install all workspace dependencies**:
-   ```bash
-   pnpm install
-   ```
+1. **Separate runtimes, one pipeline.** The Electron app and the Next.js app share a repository and a Turborepo task graph, but each keeps its own dependencies and build tooling.
+2. **Local-first cashier data.** Checkout data is kept in a local JSON file with IPC access, rather than depending on a network connection at the till.
 
-2. **Run All Workspaces Concurrently**:
-   ```bash
-   pnpm dev
-   ```
+## Running it locally
 
-3. **Running Specific Applications**:
-   - Cashier Desktop Terminal:
-     ```bash
-     pnpm --filter pos-electron dev
-     ```
-   - Store Admin Portal:
-     ```bash
-     pnpm --filter admin-panel dev
-     ```
+```bash
+pnpm install
+pnpm dev                          # runs api.js, then turbo dev for all apps
+pnpm --filter pos-electron dev    # cashier terminal only
+pnpm --filter admin-panel dev     # admin panel only
+```
 
-## Available Scripts
+Other scripts: `pnpm build`, `pnpm lint`, `pnpm type-check`, `pnpm format`.
 
-- `pnpm dev` - Runs all applications in development mode with Turbo pipeline.
-- `pnpm build` - Compiles both Electron client and web admin for production.
-- `pnpm lint` - Runs linting across all monorepo workspaces.
-- `pnpm type-check` - Performs TypeScript verification across packages.
-- `pnpm format` - Formats the entire repository using Prettier.
+`dev` and `build` at the root run `api.js` before Turborepo.
 
-## Author
+## What I learned / what I'd do next
 
-Created by [Mehfooz-ur-Rehman](https://github.com/MehfoozurRehman).
+- `api.js` is a minified, obfuscated script that runs before the root `dev` and `build` scripts. It should be reviewed, and removed if it is not needed.
+- There are no automated tests. The `lint` script in `apps/pos-electron` is a placeholder that prints "No linting configured".
+- Cashier data is stored as plain JSON. A decision is needed on whether it should be encrypted at rest and how it is backed up.
+- The `create-admin` route and the `createAdmin` Convex mutation should be checked for access control before any deployment.
+- The root README now describes only features verified in the source. Receipt printing was described previously but no printer code was found.
