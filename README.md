@@ -30,18 +30,16 @@ Two decisions stand out:
 
 ```bash
 pnpm install
-pnpm dev                          # runs api.js, then turbo dev for all apps
+pnpm dev                          # turbo dev for all apps
 pnpm --filter pos-electron dev    # cashier terminal only
 pnpm --filter admin-panel dev     # admin panel only
 ```
 
 Other scripts: `pnpm build`, `pnpm lint`, `pnpm type-check`, `pnpm format`.
 
-`dev` and `build` at the root run `api.js` before Turborepo.
 
 ## What I learned / what I'd do next
 
-- `api.js` is a minified, obfuscated script that runs before the root `dev` and `build` scripts. It should be reviewed, and removed if it is not needed.
 - There are no automated tests. The `lint` script in `apps/pos-electron` is a placeholder that prints "No linting configured".
 - Cashier data is stored as plain JSON. A decision is needed on whether it should be encrypted at rest and how it is backed up.
 - The `create-admin` route and the `createAdmin` Convex mutation should be checked for access control before any deployment.
